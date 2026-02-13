@@ -27,3 +27,6 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
+    ignore:
+      - dependency-name: "node"
+        versions: [">=25, <26"]
