@@ -1,98 +1,69 @@
-FROM node:24
+FROM mcr.microsoft.com/devcontainers/javascript-node:4.0.8-24-bookworm
 
 ARG TZ
 ENV TZ="$TZ"
 
+# Install packages not already in devcontainers/javascript-node
+# (base includes: build-essential, libssl-dev, zlib1g-dev, libbz2-dev,
+#  libreadline-dev, libsqlite3-dev, libncursesw5-dev, libxml2-dev,
+#  libffi-dev, liblzma-dev, git, zsh, jq, nano, unzip, gnupg2, etc.)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  less \
-  git \
-  procps \
-  sudo \
   fzf \
-  zsh \
-  man-db \
-  unzip \
-  gnupg2 \
-  gh \
+  vim \
+  libxmlsec1-dev \
+  postgresql-client \
   iptables \
   ipset \
-  iproute2 \
-  dnsutils \
   aggregate \
-  jq \
-  nano \
-  vim \
-  build-essential \
-  libssl-dev \
-  zlib1g-dev \
-  libbz2-dev \
-  libreadline-dev \
-  libsqlite3-dev \
-  libncursesw5-dev \
-  libxml2-dev \
-  libxmlsec1-dev \
-  libffi-dev \
-  liblzma-dev \
-  postgresql-client \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p /usr/local/share/npm-global && \
-  chown -R node:node /usr/local/share
-
-ARG USERNAME=node
-
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
-  && mkdir /commandhistory \
-  && touch /commandhistory/.bash_history \
-  && chown -R $USERNAME /commandhistory
-
-ENV DEVCONTAINER=true
-
-RUN mkdir -p /workspace /home/node/.claude && \
-  chown -R node:node /workspace /home/node/.claude
 
 WORKDIR /workspace
 
+# renovate: datasource=github-releases depName=cli/cli
+ARG GH_CLI_VERSION=2.86.0
+RUN ARCH=$(dpkg --print-architecture) && \
+  wget "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${ARCH}.deb" && \
+  dpkg -i "gh_${GH_CLI_VERSION}_linux_${ARCH}.deb" && \
+  rm "gh_${GH_CLI_VERSION}_linux_${ARCH}.deb"
+
+# renovate: datasource=github-releases depName=dandavison/delta
 ARG GIT_DELTA_VERSION=0.18.2
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
+# renovate: datasource=custom.one-password-cli depName=1password-cli
 ARG OP_CLI_VERSION=2.32.1
 RUN ARCH=$(dpkg --print-architecture) && \
   wget "https://cache.agilebits.com/dist/1P/op2/pkg/v${OP_CLI_VERSION}/op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" && \
   unzip "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" -d /usr/local/bin && \
   rm "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip"
 
-USER node
+RUN mkdir -p /workspace /home/node/.claude && \
+  chown -R node:node /workspace /home/node/.claude
 
-ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
-ENV PATH=$PATH:/usr/local/share/npm-global/bin
-
+ENV DEVCONTAINER=true
 ENV SHELL=/bin/zsh
 ENV EDITOR=nano
 ENV VISUAL=nano
 
-ARG ZSH_IN_DOCKER_VERSION=1.2.0
-RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \
-  -p git \
-  -p fzf \
-  -a "source /usr/share/doc/fzf/examples/key-bindings.zsh" \
-  -a "source /usr/share/doc/fzf/examples/completion.zsh" \
-  -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
-  -a 'export PATH="$HOME/.local/bin:$PATH"' \
-  -x
+USER node
+
+# Configure shell: fzf integration + local bin PATH
+RUN echo 'source /usr/share/doc/fzf/examples/key-bindings.zsh' >> ~/.zshrc && \
+  echo 'source /usr/share/doc/fzf/examples/completion.zsh' >> ~/.zshrc && \
+  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-RUN /home/node/.local/bin/uv python install 3.14
+# renovate: datasource=python-version depName=python
+ARG PYTHON_VERSION=3.14.3
+RUN /home/node/.local/bin/uv python install $PYTHON_VERSION
 
 COPY init-firewall.sh /usr/local/bin/
 USER root
-RUN chmod +x /usr/local/bin/init-firewall.sh && \
-  echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node && \
-  chmod 0440 /etc/sudoers.d/node
+RUN chmod +x /usr/local/bin/init-firewall.sh
 USER node
