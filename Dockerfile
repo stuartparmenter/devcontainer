@@ -3,6 +3,18 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:4.0.8-24-bookworm
 ARG TZ
 ENV TZ="$TZ"
 
+# Add official apt repos for gh CLI and 1Password CLI
+RUN mkdir -p -m 755 /etc/apt/keyrings && \
+  wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
+  chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    | tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+  wget -qO- https://downloads.1password.com/linux/keys/1password.asc \
+    | gpg --dearmor --output /etc/apt/keyrings/1password-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" \
+    | tee /etc/apt/sources.list.d/1password-cli.list > /dev/null
+
 # Install packages not already in devcontainers/javascript-node
 # (base includes: build-essential, libssl-dev, zlib1g-dev, libbz2-dev,
 #  libreadline-dev, libsqlite3-dev, libncursesw5-dev, libxml2-dev,
@@ -15,16 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   iptables \
   ipset \
   aggregate \
+  gh \
+  1password-cli \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /workspace
-
-# renovate: datasource=github-releases depName=cli/cli
-ARG GH_CLI_VERSION=2.86.0
-RUN ARCH=$(dpkg --print-architecture) && \
-  wget "https://github.com/cli/cli/releases/download/v${GH_CLI_VERSION}/gh_${GH_CLI_VERSION}_linux_${ARCH}.deb" && \
-  dpkg -i "gh_${GH_CLI_VERSION}_linux_${ARCH}.deb" && \
-  rm "gh_${GH_CLI_VERSION}_linux_${ARCH}.deb"
 
 # renovate: datasource=github-releases depName=dandavison/delta
 ARG GIT_DELTA_VERSION=0.18.2
@@ -33,15 +38,10 @@ RUN ARCH=$(dpkg --print-architecture) && \
   dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
-# renovate: datasource=custom.one-password-cli depName=1password-cli
-ARG OP_CLI_VERSION=2.32.1
-RUN ARCH=$(dpkg --print-architecture) && \
-  wget "https://cache.agilebits.com/dist/1P/op2/pkg/v${OP_CLI_VERSION}/op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" && \
-  unzip "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" -d /usr/local/bin && \
-  rm "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip"
-
 RUN mkdir -p /workspace /home/node/.claude && \
   chown -R node:node /workspace /home/node/.claude
+
+WORKDIR /workspace
 
 ENV DEVCONTAINER=true
 ENV SHELL=/bin/zsh
