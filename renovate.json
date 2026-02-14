@@ -17,13 +17,5 @@
         "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\nARG\\s+\\w+=(?<currentValue>[^\\s]+)"
       ]
     }
-  ],
-  "customDatasources": {
-    "one-password-cli": {
-      "defaultRegistryUrlTemplate": "https://app-updates.agilebits.com/check/1/0/CLI2/en/2000001/N",
-      "transformTemplates": [
-        "{\"releases\": [{\"version\": version}]}"
-      ]
-    }
-  }
+  ]
 }
