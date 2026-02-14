@@ -59,6 +59,12 @@ RUN ARCH=$(dpkg --print-architecture) && \
   dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
+ARG OP_CLI_VERSION=2.32.1
+RUN ARCH=$(dpkg --print-architecture) && \
+  wget "https://cache.agilebits.com/dist/1P/op2/pkg/v${OP_CLI_VERSION}/op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" && \
+  unzip "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip" -d /usr/local/bin && \
+  rm "op_linux_${ARCH}_v${OP_CLI_VERSION}.zip"
+
 USER node
 
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
