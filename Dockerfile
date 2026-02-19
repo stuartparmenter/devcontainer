@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:4.0.8-24-bookworm
 ARG TZ
 ENV TZ="$TZ"
 
-# Add official apt repos for gh CLI and 1Password CLI
+# Add official apt repos for gh CLI, 1Password CLI, and Google Cloud CLI
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
   wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \
@@ -13,7 +13,11 @@ RUN mkdir -p -m 755 /etc/apt/keyrings && \
   wget -qO- https://downloads.1password.com/linux/keys/1password.asc \
     | gpg --dearmor --output /etc/apt/keyrings/1password-archive-keyring.gpg && \
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/$(dpkg --print-architecture) stable main" \
-    | tee /etc/apt/sources.list.d/1password-cli.list > /dev/null
+    | tee /etc/apt/sources.list.d/1password-cli.list > /dev/null && \
+  curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    | gpg --dearmor --output /etc/apt/keyrings/cloud.google.gpg && \
+  echo "deb [signed-by=/etc/apt/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+    | tee /etc/apt/sources.list.d/google-cloud-sdk.list > /dev/null
 
 # Install packages not already in devcontainers/javascript-node
 # (base includes: build-essential, libssl-dev, zlib1g-dev, libbz2-dev,
@@ -29,6 +33,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   aggregate \
   gh \
   1password-cli \
+  google-cloud-cli \
+  google-cloud-cli-gke-gcloud-auth-plugin \
+  google-cloud-cli-cloud-build-local \
+  google-cloud-cli-cloud-run-proxy \
+  kubectl \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # renovate: datasource=github-releases depName=dandavison/delta
