@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:4.0.8-24-bookworm
+FROM mcr.microsoft.com/devcontainers/javascript-node:4.0.9-24-bookworm
 
 ARG TZ
 ENV TZ="$TZ"
