@@ -69,7 +69,7 @@ RUN curl -fsSL https://claude.ai/install.sh | bash
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # renovate: datasource=python-version depName=python
-ARG PYTHON_VERSION=3.14.3
+ARG PYTHON_VERSION=3.14.4
 RUN /home/node/.local/bin/uv python install $PYTHON_VERSION
 
 COPY init-firewall.sh /usr/local/bin/
